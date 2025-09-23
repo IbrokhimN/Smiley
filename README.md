@@ -1,21 +1,26 @@
 # 😊 Smiley Predictor
 
-An interactive Python app that lets you **draw a smiley or sad face** on a `100×100` grid and instantly predicts what you drew using a trained **PyTorch CNN model**.
+![Python](https://img.shields.io/badge/python-3.10%2B-blue?logo=python)
+![PyTorch](https://img.shields.io/badge/pytorch-1.13-red?logo=pytorch)
+![License](https://img.shields.io/badge/license-MIT-green)
+![Status](https://img.shields.io/badge/status-ready-brightgreen)
 
-The model has been trained on **synthetic data with variations** (offsets, noise, different positions), so it can recognize faces even when they are not perfectly centered or drawn exactly the same.
+**Interactive Python app** to draw a smiley 🙂 or sad 🙁 face on a `100×100` grid and predict it in **real-time** using a trained **PyTorch CNN model**.
+
+The model is trained on **synthetic data with variations**, so it works even if the drawing is slightly off-center or noisy.
 
 ---
 
 ## ✨ Features
 
-* 🎨 Draw smiley 🙂 or sad 🙁 faces on a **100×100 grid**.
+* 🎨 Draw smiley 🙂 or sad 🙁 faces on a **100×100 canvas**.
 * ⚡ **Real-time prediction** while drawing.
-* 🧹 Easy canvas reset:
+* 🧹 Clear the canvas easily:
 
   * **Right-click** on the canvas, or
   * **Press "Clear" button**.
-* 🚀 GPU acceleration supported if available.
-* 📦 Pre-trained model `smiley_model_varied.pth` included.
+* 🚀 **GPU acceleration** supported.
+* 📦 Includes **pre-trained model**: `smiley_model_varied.pth`.
 
 ---
 
@@ -44,45 +49,36 @@ pip install -r requirements.txt
 
 ## ▶️ Usage
 
-1. Ensure the trained model `smiley_model_varied.pth` is present in the project folder.
-2. Run the GUI:
+1. Make sure the **pre-trained model** is in the project folder: `smiley_model_varied.pth`.
+2. Launch the interactive GUI:
 
 ```bash
 python3 draw_smiley_varied.py
 ```
 
 3. **Draw your face** with the **left mouse button**.
-4. Prediction will appear **instantly** below the canvas.
-5. To reset the canvas: **right-click** or press **Clear**.
+4. The **prediction updates in real-time**.
+5. Reset the canvas: **right-click** or press **Clear**.
 
 ---
 
-## 📂 Project Structure
-
-* `train_smiley_varied.py` → Train the CNN on synthetic smiley/sad data.
-* `smiley_model_varied.pth` → Pre-trained CNN weights.
-* `draw_smiley_varied.py` → Interactive drawing + prediction GUI.
-* `README.md` → Project documentation (this file).
-
----
 
 ## 📝 Notes
 
-* The model was trained on **synthetic images** with:
+* Trained on **synthetic images** with:
 
   * Random positions
-  * Noise injection
-  * Variation in shape placement
+  * Small noise
+  * Varied face placement
+* Works best when the drawing roughly resembles a **smiley or sad face**.
+* For improved accuracy:
 
-* Works best when the face resembles a simple **smiley or sad face**.
-
-* For higher accuracy:
-
-  * Retrain with **larger datasets**
-  * Add **more styles of drawings**
+  * Increase dataset size
+  * Add **different drawing styles**
 
 ---
 
 ## 📜 License
 
-MIT License – feel free to use, modify, and share.
+MIT License – free to use, modify, and share.
+

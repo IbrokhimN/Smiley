@@ -9,6 +9,7 @@ import torch.nn as nn
 CELL_SIZE: int = 5
 GRID_SIZE: int = 100
 WINDOW_SIZE: int = CELL_SIZE * GRID_SIZE
+BRUSH_SIZE: int = 3  # толщина кисти в клетках
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("Using device:", DEVICE)
@@ -18,7 +19,6 @@ print("Using device:", DEVICE)
 # Модель
 # -----------------------------
 class SmileyCNN(nn.Module):
-    """Простая CNN для распознавания смайликов/шума"""
     def __init__(self):
         super().__init__()
         self.conv1 = nn.Conv2d(1, 16, 3, padding=1)
@@ -48,15 +48,6 @@ model.eval()
 # Предсказание
 # -----------------------------
 def predict(grid: np.ndarray) -> str:
-    """
-    Предсказывает, является ли рисунок смайликом.
-    
-    Args:
-        grid: np.ndarray формы (GRID_SIZE, GRID_SIZE)
-    
-    Returns:
-        "Smiley" или "Not Smiley"
-    """
     img_tensor = torch.tensor(grid, dtype=torch.float32).unsqueeze(0).unsqueeze(0).to(DEVICE)
     with torch.no_grad():
         output = model(img_tensor)
@@ -74,46 +65,53 @@ class DrawGrid:
 
         # Canvas
         self.canvas = tk.Canvas(master, width=WINDOW_SIZE, height=WINDOW_SIZE, bg="white")
-        self.canvas.pack()
+        self.canvas.pack(padx=10, pady=10)
 
-        # Сетка рисования
+        # Grid
         self.grid = np.zeros((GRID_SIZE, GRID_SIZE), dtype=np.float32)
 
         # Prediction label
         self.label = tk.Label(master, text="Prediction: ", font=("Arial", 16))
-        self.label.pack(pady=5)
+        self.label.pack(pady=(0, 5))
 
         # Clear button
         self.clear_button = tk.Button(master, text="Clear", command=self.clear)
-        self.clear_button.pack(pady=5)
+        self.clear_button.pack(pady=(0, 10))
 
         # Bind events
-        self.canvas.bind("<B1-Motion>", self.paint_and_predict)  # ЛКМ движение
-        self.canvas.bind("<Button-3>", self.clear)               # ПКМ очистка
+        self.canvas.bind("<B1-Motion>", self.paint_and_predict)
+        self.canvas.bind("<Button-3>", self.clear)
 
     def paint(self, event: tk.Event) -> None:
-        """Рисуем на сетке и канвасе"""
-        x, y = event.x // CELL_SIZE, event.y // CELL_SIZE
-        if 0 <= x < GRID_SIZE and 0 <= y < GRID_SIZE:
-            if self.grid[y, x] == 0.0:  # Только если ячейка ещё пустая
-                self.grid[y, x] = 1.0
-                self.canvas.create_rectangle(
-                    x * CELL_SIZE, y * CELL_SIZE,
-                    (x + 1) * CELL_SIZE, (y + 1) * CELL_SIZE,
-                    fill="black", outline=""
-                )
+        """Рисуем кистью на канвасе и обновляем сетку"""
+        x_center = event.x // CELL_SIZE
+        y_center = event.y // CELL_SIZE
+
+        half_brush = BRUSH_SIZE // 2
+        for dy in range(-half_brush, half_brush + 1):
+            for dx in range(-half_brush, half_brush + 1):
+                x = x_center + dx
+                y = y_center + dy
+                if 0 <= x < GRID_SIZE and 0 <= y < GRID_SIZE:
+                    self.grid[y, x] = 1.0
+                    self.canvas.create_rectangle(
+                        x * CELL_SIZE, y * CELL_SIZE,
+                        (x + 1) * CELL_SIZE, (y + 1) * CELL_SIZE,
+                        fill="black", outline=""
+                    )
 
     def paint_and_predict(self, event: tk.Event) -> None:
         """Рисуем и обновляем предсказание"""
         self.paint(event)
         result = predict(self.grid)
-        self.label.config(text=f"Prediction: {result}")
+        color = "green" if result == "Smiley" else "red"
+        self.label.config(text=f"Prediction: {result}", fg=color)
 
     def clear(self, event: tk.Event = None) -> None:
-        """Очищаем канвас и сетку"""
+        """Очистка канваса и сетки"""
         self.canvas.delete("all")
         self.grid.fill(0.0)
-        self.label.config(text="Prediction: ")
+        self.label.config(text="Prediction: ", fg="black")
 
 
 # -----------------------------

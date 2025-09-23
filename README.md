@@ -5,7 +5,7 @@
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Status](https://img.shields.io/badge/status-ready-brightgreen)
 
-**Interactive Python app** to draw a smiley 🙂 or sad 🙁 face on a `100×100` grid and predict it in **real-time** using a trained **PyTorch CNN model**.
+**Interactive Python app** to draw a smiley 🙂 or sad 🙁 face on a `100×100` grid and predict it **in real-time** using a trained **PyTorch CNN model**.
 
 The model is trained on **synthetic data with variations**, so it works even if the drawing is slightly off-center or noisy.
 
@@ -17,10 +17,10 @@ The model is trained on **synthetic data with variations**, so it works even if 
 * ⚡ **Real-time prediction** while drawing.
 * 🧹 Clear the canvas easily:
 
-  * **Right-click** on the canvas, or
-  * **Press "Clear" button**.
+  * **Right-click**, or
+  * Press **Clear button**.
 * 🚀 **GPU acceleration** supported.
-* 📦 Includes **pre-trained model**: `smiley_model_varied.pth`.
+* 📦 Pre-trained model included: `smiley_model_varied.pth`.
 
 ---
 
@@ -62,7 +62,6 @@ python3 draw_smiley_varied.py
 
 ---
 
-
 ## 📝 Notes
 
 * Trained on **synthetic images** with:
@@ -74,11 +73,10 @@ python3 draw_smiley_varied.py
 * For improved accuracy:
 
   * Increase dataset size
-  * Add **different drawing styles**
+  * Train with **different drawing styles**
 
 ---
 
 ## 📜 License
 
 MIT License – free to use, modify, and share.
-

@@ -109,17 +109,6 @@ python3 draw_smiley_varied.py
 
 ---
 
-## 🗂 Project Structure
-
-| File                      | Description                        |
-| ------------------------- | ---------------------------------- |
-| `train_smiley_varied.py`  | Train CNN on synthetic varied data |
-| `smiley_model_varied.pth` | Pre-trained CNN model              |
-| `draw_smiley_varied.py`   | Interactive GUI                    |
-| `README.md`               | This file                          |
-
----
-
 ## 📌 Try it Now
 
 ```bash

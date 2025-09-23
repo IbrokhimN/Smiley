@@ -1,3 +1,4 @@
+
 # 😊 Smiley Predictor
 
 ![Python](https://img.shields.io/badge/python-3.10%2B-blue?logo=python)
@@ -5,99 +6,98 @@
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Status](https://img.shields.io/badge/status-ready-brightgreen)
 
-**Interactive Python app** to draw a smiley 🙂 or sad 🙁 face on a `100×100` grid and predict it **in real-time** using a trained **PyTorch CNN model**.
-
-The model is trained on **synthetic data with variations**, so it works even if the drawing is slightly off-center, noisy, or small variations are present.
+**Interactive Python app** to draw a smiley 🙂 or sad 🙁 face on a `100×100` grid and predict it **in real-time** using a **PyTorch CNN** model trained on **synthetic data with variations**. Works even if the drawing is slightly off-center or noisy.
 
 ---
 
-## ✨ Features
+## 🚀 Features
 
-* 🎨 Draw smiley 🙂 or sad 🙁 faces on a **100×100 canvas**.
-* ⚡ **Real-time prediction** as you draw.
+* 🎨 Draw **smiley 🙂** or **sad 🙁** faces on a **100×100 canvas**
+* ⚡ **Real-time predictions** while drawing
 * 🧹 **Clear canvas** easily:
 
-  * **Right-click** on canvas
-  * Or press the **Clear button**
-* 🖌 Adjustable brush size and color support (if using enhanced version)
-* 🚀 **GPU acceleration** supported for fast predictions
-* 📦 **Pre-trained model** included: `smiley_model_varied.pth`
-* 🖼 Preview mini-map (optional in advanced GUI)
-* ↩️ **Undo / Redo** functionality (advanced GUI)
+  * **Right-click**, or
+  * Press **Clear button**
+* 🖌 Adjustable **brush size** and **color support** (advanced GUI)
+* ↩️ **Undo / Redo** (advanced GUI)
+* 🖼 **Mini-map preview** (optional)
+* 🚀 **GPU acceleration** supported
+* 📦 Pre-trained model: `smiley_model_varied.pth`
 
 ---
 
-## 📸 Example
+## 📸 Demo
 
 ![Smiley Example](https://raw.githubusercontent.com/IbrokhimN/Smiley/main/sml.png)
+
+> 💡 Tip: Draw roughly like a smiley or sad face. Model handles small offsets and noise.
 
 ---
 
 ## 🔧 Installation
 
-1. **Clone the repository**:
+1. **Clone the repository:**
 
 ```bash
 git clone https://github.com/IbrokhimN/Smiley.git
 cd Smiley
 ```
 
-2. **Install dependencies**:
+2. **Install dependencies:**
 
 ```bash
 pip install -r requirements.txt
 ```
 
-> 💡 Recommended Python version: **3.10+**
+> ✅ Recommended: Python **3.10+**
 
 ---
 
 ## ▶️ Usage
 
-1. Ensure the pre-trained model is present: `smiley_model_varied.pth`
-2. Launch the interactive GUI:
+1. Ensure `smiley_model_varied.pth` is in the project folder
+2. Launch the GUI:
 
 ```bash
 python3 draw_smiley_varied.py
 ```
 
-3. **Draw** your face with the **left mouse button**.
-4. The **prediction updates in real-time**.
+3. **Draw** using the **left mouse button**
+4. **Prediction updates live**
 5. **Clear** the canvas:
 
    * Right-click, or
-   * Press the **Clear button**
-6. (Advanced) Use **Undo / Redo** and **change brush size or color** if enabled.
+   * Press **Clear button**
+6. (Advanced) **Undo/Redo**, **change brush color** or **size** if available
 
 ---
 
 ## 📝 Notes
 
-* Model trained on **synthetic images** with:
+* Model trained on **synthetic images**:
 
   * Random positions
   * Small noise
   * Varied face placement
-* Works best when drawing roughly resembles a **smiley or sad face**.
-* To improve accuracy:
+* Best results when drawing roughly resembles a **smiley or sad face**
+* For improved accuracy:
 
   * Increase dataset size
   * Train with **different drawing styles**
 
 ---
 
-## 🗂 Files Overview
+## 📌 Try it Now
 
-| File                      | Description                                      |
-| ------------------------- | ------------------------------------------------ |
-| `train_smiley_varied.py`  | Script to train the CNN on varied synthetic data |
-| `smiley_model_varied.pth` | Pre-trained CNN model for face prediction        |
-| `draw_smiley_varied.py`   | Interactive drawing GUI                          |
-| `README.md`               | This file                                        |
+```bash
+python3 draw_smiley_varied.py
+```
+
+> Draw a face and watch **real-time predictions**!
 
 ---
 
 ## 📜 License
 
-MIT License – free to use, modify, and share.
+MIT License – free to use, modify, and share
 

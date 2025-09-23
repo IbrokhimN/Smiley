@@ -1,24 +1,43 @@
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset, DataLoader, random_split
 import numpy as np
 import random
+import matplotlib.pyplot as plt
+from dataclasses import dataclass
+from tqdm import tqdm
+
 
 # -------------------------------
-# Настройки
+# Конфиг
 # -------------------------------
-SEED = 42
-random.seed(SEED)
-np.random.seed(SEED)
-torch.manual_seed(SEED)
+@dataclass
+class Config:
+    seed: int = 42
+    dataset_size: int = 5000
+    batch_size: int = 32
+    lr: float = 0.001
+    max_epochs: int = 50
+    train_split: float = 0.8
+    model_path: str = "smiley_model_varied.pth"
+
+
+# -------------------------------
+# Инициализация
+# -------------------------------
+def set_seed(seed: int):
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("Using device:", DEVICE)
 
 
 # -------------------------------
-# Датасет с вариациями смайликов
+# Датасет
 # -------------------------------
 class SmileyDataset(Dataset):
     def __init__(self, num_samples: int = 5000):
@@ -39,7 +58,6 @@ class SmileyDataset(Dataset):
     def _generate_sample(self):
         img = np.zeros((100, 100), dtype=np.float32)
 
-        # случайный сдвиг смайлика
         offset_x = random.randint(10, 40)
         offset_y = random.randint(10, 40)
 
@@ -52,20 +70,19 @@ class SmileyDataset(Dataset):
             img[eye_y, eye_x_left] = 1
             img[eye_y, eye_x_right] = 1
 
-            # Улыбка
             for i in range(eye_x_left, eye_x_right):
                 j = int(offset_y + 30 + 10 * np.sin((i - eye_x_left) / 40 * np.pi))
                 img[j, i] = 1
 
             label = 1
         else:
-            # Грусть / шум
+            # Шум / грусть
             for _ in range(50):
                 x, y = random.randint(0, 99), random.randint(0, 99)
                 img[y, x] = 1
             label = 0
 
-        # добавляем случайный шум
+        # Шум
         for _ in range(random.randint(0, 5)):
             x, y = random.randint(0, 99), random.randint(0, 99)
             img[y, x] = 1
@@ -80,7 +97,7 @@ class SmileyDataset(Dataset):
 
 
 # -------------------------------
-# CNN модель
+# Модель
 # -------------------------------
 class SmileyCNN(nn.Module):
     def __init__(self):
@@ -89,7 +106,6 @@ class SmileyCNN(nn.Module):
         self.conv2 = nn.Conv2d(16, 32, kernel_size=3, padding=1)
         self.pool = nn.MaxPool2d(2, 2)
 
-        # после двух пуллингов картинка 100x100 → 25x25
         self.fc1 = nn.Linear(32 * 25 * 25, 64)
         self.fc2 = nn.Linear(64, 2)
 
@@ -97,19 +113,19 @@ class SmileyCNN(nn.Module):
         x = torch.relu(self.conv1(x))
         x = self.pool(torch.relu(self.conv2(x)))
         x = self.pool(x)
-        x = x.view(x.size(0), -1)  # flatten
+        x = x.view(x.size(0), -1)
         x = torch.relu(self.fc1(x))
         return self.fc2(x)
 
 
 # -------------------------------
-# Функции обучения
+# Обучение
 # -------------------------------
 def train_one_epoch(model, dataloader, criterion, optimizer):
     model.train()
     running_loss, correct, total = 0.0, 0, 0
 
-    for imgs, labels in dataloader:
+    for imgs, labels in tqdm(dataloader, leave=False):
         imgs, labels = imgs.to(DEVICE), labels.to(DEVICE)
 
         optimizer.zero_grad()
@@ -125,32 +141,82 @@ def train_one_epoch(model, dataloader, criterion, optimizer):
 
     avg_loss = running_loss / len(dataloader)
     accuracy = correct / total
-    return avg_loss, accuracy, correct, total
+    return avg_loss, accuracy
 
 
-def train_model(model, dataloader, max_epochs=100):
+@torch.no_grad()
+def evaluate(model, dataloader, criterion):
+    model.eval()
+    running_loss, correct, total = 0.0, 0, 0
+
+    for imgs, labels in dataloader:
+        imgs, labels = imgs.to(DEVICE), labels.to(DEVICE)
+        outputs = model(imgs)
+        loss = criterion(outputs, labels)
+
+        running_loss += loss.item()
+        _, predicted = torch.max(outputs, 1)
+        total += labels.size(0)
+        correct += (predicted == labels).sum().item()
+
+    avg_loss = running_loss / len(dataloader)
+    accuracy = correct / total
+    return avg_loss, accuracy
+
+
+# -------------------------------
+# Визуализация примеров
+# -------------------------------
+def show_examples(dataset, n=6):
+    plt.figure(figsize=(10, 3))
+    for i in range(n):
+        img, label = dataset[i]
+        plt.subplot(1, n, i + 1)
+        plt.imshow(img.squeeze(), cmap="gray")
+        plt.title("Smiley" if label == 1 else "Noise")
+        plt.axis("off")
+    plt.show()
+
+
+# -------------------------------
+# Main
+# -------------------------------
+def main(cfg: Config):
+    set_seed(cfg.seed)
+
+    dataset = SmileyDataset(num_samples=cfg.dataset_size)
+
+    # Train/Test split
+    train_size = int(cfg.train_split * len(dataset))
+    test_size = len(dataset) - train_size
+    train_ds, test_ds = random_split(dataset, [train_size, test_size])
+
+    train_loader = DataLoader(train_ds, batch_size=cfg.batch_size, shuffle=True)
+    test_loader = DataLoader(test_ds, batch_size=cfg.batch_size)
+
+    # Показ примеров
+    show_examples(dataset)
+
+    # Модель
+    model = SmileyCNN().to(DEVICE)
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(model.parameters(), lr=0.001)
+    optimizer = optim.Adam(model.parameters(), lr=cfg.lr)
 
-    for epoch in range(1, max_epochs + 1):
-        loss, acc, correct, total = train_one_epoch(model, dataloader, criterion, optimizer)
+    # Обучение
+    for epoch in range(1, cfg.max_epochs + 1):
+        train_loss, train_acc = train_one_epoch(model, train_loader, criterion, optimizer)
+        test_loss, test_acc = evaluate(model, test_loader, criterion)
 
         print(f"Epoch {epoch:02d} | "
-              f"Loss: {loss:.4f} | "
-              f"Accuracy: {acc * 100:.2f}% ({correct}/{total})")
+              f"Train: loss={train_loss:.4f}, acc={train_acc*100:.2f}% | "
+              f"Test: loss={test_loss:.4f}, acc={test_acc*100:.2f}%")
 
-        if acc == 1.0:
-            torch.save(model.state_dict(), "smiley_model_varied.pth")
-            print("✅ Reached 100% accuracy! Model saved as smiley_model_varied.pth")
+        if test_acc == 1.0:
+            torch.save(model.state_dict(), cfg.model_path)
+            print(f"✅ Perfect accuracy reached! Model saved at {cfg.model_path}")
             break
 
 
-# -------------------------------
-# Запуск
-# -------------------------------
 if __name__ == "__main__":
-    dataset = SmileyDataset(num_samples=5000)
-    dataloader = DataLoader(dataset, batch_size=32, shuffle=True)
-
-    model = SmileyCNN().to(DEVICE)
-    train_model(model, dataloader)
+    cfg = Config()
+    main(cfg)

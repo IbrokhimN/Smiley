@@ -7,6 +7,9 @@ import random
 import matplotlib.pyplot as plt
 from dataclasses import dataclass
 from tqdm import tqdm
+import logging
+from sklearn.metrics import confusion_matrix, classification_report
+import seaborn as sns
 
 
 # -------------------------------
@@ -21,25 +24,40 @@ class Config:
     max_epochs: int = 50
     train_split: float = 0.8
     model_path: str = "smiley_model_varied.pth"
+    optimizer: str = "adam"  # ["adam", "sgd"]
+    use_scheduler: bool = False
 
 
 # -------------------------------
-# Инициализация
+# Utils
 # -------------------------------
 def set_seed(seed: int):
+    """Фиксируем сиды для воспроизводимости"""
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
 
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-print("Using device:", DEVICE)
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="[%(asctime)s] %(levelname)s - %(message)s",
+    datefmt="%H:%M:%S"
+)
+logger = logging.getLogger(__name__)
 
 
 # -------------------------------
-# Датасет
+# Dataset
 # -------------------------------
 class SmileyDataset(Dataset):
+    """
+    Генератор датасета:
+    label=1 -> смайлик
+    label=0 -> шум
+    """
+
     def __init__(self, num_samples: int = 5000):
         self.num_samples = num_samples
         self.data, self.labels = self._generate_dataset(num_samples)
@@ -51,7 +69,7 @@ class SmileyDataset(Dataset):
             data_list.append(img)
             labels_list.append(label)
 
-        data = torch.tensor(np.array(data_list), dtype=torch.float32).unsqueeze(1)  # [N,1,100,100]
+        data = torch.tensor(np.array(data_list), dtype=torch.float32).unsqueeze(1)
         labels = torch.tensor(np.array(labels_list), dtype=torch.long)
         return data, labels
 
@@ -64,25 +82,21 @@ class SmileyDataset(Dataset):
         if random.random() > 0.5:
             # Смайлик :)
             eye_y = offset_y
-            eye_x_left = offset_x
-            eye_x_right = offset_x + 40
-
-            img[eye_y, eye_x_left] = 1
-            img[eye_y, eye_x_right] = 1
+            eye_x_left, eye_x_right = offset_x, offset_x + 40
+            img[eye_y, eye_x_left] = img[eye_y, eye_x_right] = 1
 
             for i in range(eye_x_left, eye_x_right):
                 j = int(offset_y + 30 + 10 * np.sin((i - eye_x_left) / 40 * np.pi))
                 img[j, i] = 1
-
             label = 1
         else:
-            # Шум / грусть
+            # Шум
             for _ in range(50):
                 x, y = random.randint(0, 99), random.randint(0, 99)
                 img[y, x] = 1
             label = 0
 
-        # Шум
+        # Немного случайного шума
         for _ in range(random.randint(0, 5)):
             x, y = random.randint(0, 99), random.randint(0, 99)
             img[y, x] = 1
@@ -97,13 +111,15 @@ class SmileyDataset(Dataset):
 
 
 # -------------------------------
-# Модель
+# Model
 # -------------------------------
 class SmileyCNN(nn.Module):
+    """Простая CNN для классификации смайлик/шум"""
+
     def __init__(self):
         super().__init__()
-        self.conv1 = nn.Conv2d(1, 16, kernel_size=3, padding=1)
-        self.conv2 = nn.Conv2d(16, 32, kernel_size=3, padding=1)
+        self.conv1 = nn.Conv2d(1, 16, 3, padding=1)
+        self.conv2 = nn.Conv2d(16, 32, 3, padding=1)
         self.pool = nn.MaxPool2d(2, 2)
 
         self.fc1 = nn.Linear(32 * 25 * 25, 64)
@@ -119,13 +135,22 @@ class SmileyCNN(nn.Module):
 
 
 # -------------------------------
-# Обучение
+# Training & Evaluation
 # -------------------------------
+def get_optimizer(model, cfg: Config):
+    if cfg.optimizer == "adam":
+        return optim.Adam(model.parameters(), lr=cfg.lr)
+    elif cfg.optimizer == "sgd":
+        return optim.SGD(model.parameters(), lr=cfg.lr, momentum=0.9)
+    else:
+        raise ValueError(f"Unknown optimizer: {cfg.optimizer}")
+
+
 def train_one_epoch(model, dataloader, criterion, optimizer):
     model.train()
     running_loss, correct, total = 0.0, 0, 0
 
-    for imgs, labels in tqdm(dataloader, leave=False):
+    for imgs, labels in tqdm(dataloader, leave=False, desc="Train"):
         imgs, labels = imgs.to(DEVICE), labels.to(DEVICE)
 
         optimizer.zero_grad()
@@ -139,15 +164,14 @@ def train_one_epoch(model, dataloader, criterion, optimizer):
         total += labels.size(0)
         correct += (predicted == labels).sum().item()
 
-    avg_loss = running_loss / len(dataloader)
-    accuracy = correct / total
-    return avg_loss, accuracy
+    return running_loss / len(dataloader), correct / total
 
 
 @torch.no_grad()
 def evaluate(model, dataloader, criterion):
     model.eval()
     running_loss, correct, total = 0.0, 0, 0
+    all_labels, all_preds = [], []
 
     for imgs, labels in dataloader:
         imgs, labels = imgs.to(DEVICE), labels.to(DEVICE)
@@ -156,18 +180,30 @@ def evaluate(model, dataloader, criterion):
 
         running_loss += loss.item()
         _, predicted = torch.max(outputs, 1)
+
         total += labels.size(0)
         correct += (predicted == labels).sum().item()
+        all_labels.extend(labels.cpu().numpy())
+        all_preds.extend(predicted.cpu().numpy())
 
     avg_loss = running_loss / len(dataloader)
-    accuracy = correct / total
-    return avg_loss, accuracy
+    acc = correct / total
+    return avg_loss, acc, np.array(all_labels), np.array(all_preds)
 
 
-# -------------------------------
-# Визуализация примеров
-# -------------------------------
+def plot_confusion_matrix(y_true, y_pred, classes=("Noise", "Smiley")):
+    cm = confusion_matrix(y_true, y_pred)
+    plt.figure(figsize=(4, 3))
+    sns.heatmap(cm, annot=True, fmt="d", cmap="Blues",
+                xticklabels=classes, yticklabels=classes)
+    plt.ylabel("True")
+    plt.xlabel("Predicted")
+    plt.title("Confusion Matrix")
+    plt.show()
+
+
 def show_examples(dataset, n=6):
+    """Показываем примеры картинок"""
     plt.figure(figsize=(10, 3))
     for i in range(n):
         img, label = dataset[i]
@@ -183,10 +219,9 @@ def show_examples(dataset, n=6):
 # -------------------------------
 def main(cfg: Config):
     set_seed(cfg.seed)
+    logger.info(f"Using device: {DEVICE}")
 
-    dataset = SmileyDataset(num_samples=cfg.dataset_size)
-
-    # Train/Test split
+    dataset = SmileyDataset(cfg.dataset_size)
     train_size = int(cfg.train_split * len(dataset))
     test_size = len(dataset) - train_size
     train_ds, test_ds = random_split(dataset, [train_size, test_size])
@@ -194,27 +229,32 @@ def main(cfg: Config):
     train_loader = DataLoader(train_ds, batch_size=cfg.batch_size, shuffle=True)
     test_loader = DataLoader(test_ds, batch_size=cfg.batch_size)
 
-    # Показ примеров
     show_examples(dataset)
 
-    # Модель
     model = SmileyCNN().to(DEVICE)
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(model.parameters(), lr=cfg.lr)
+    optimizer = get_optimizer(model, cfg)
+    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.5) if cfg.use_scheduler else None
 
-    # Обучение
     for epoch in range(1, cfg.max_epochs + 1):
         train_loss, train_acc = train_one_epoch(model, train_loader, criterion, optimizer)
-        test_loss, test_acc = evaluate(model, test_loader, criterion)
+        test_loss, test_acc, y_true, y_pred = evaluate(model, test_loader, criterion)
 
-        print(f"Epoch {epoch:02d} | "
-              f"Train: loss={train_loss:.4f}, acc={train_acc*100:.2f}% | "
-              f"Test: loss={test_loss:.4f}, acc={test_acc*100:.2f}%")
+        logger.info(f"Epoch {epoch:02d} | "
+                    f"Train: loss={train_loss:.4f}, acc={train_acc*100:.2f}% | "
+                    f"Test: loss={test_loss:.4f}, acc={test_acc*100:.2f}%")
+
+        if scheduler:
+            scheduler.step()
 
         if test_acc == 1.0:
             torch.save(model.state_dict(), cfg.model_path)
-            print(f"✅ Perfect accuracy reached! Model saved at {cfg.model_path}")
+            logger.info(f"✅ Perfect accuracy reached! Model saved at {cfg.model_path}")
             break
+
+    # Финальная метрика
+    logger.info("\n" + classification_report(y_true, y_pred, target_names=["Noise", "Smiley"]))
+    plot_confusion_matrix(y_true, y_pred)
 
 
 if __name__ == "__main__":

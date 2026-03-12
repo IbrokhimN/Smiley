@@ -1,4 +1,4 @@
-# 😊 Smiley Predictor – Pro Edition
+# Smile Predictor
 
 ![Python](https://img.shields.io/badge/python-3.10%2B-blue?logo=python)
 ![PyTorch](https://img.shields.io/badge/pytorch-1.13-red?logo=pytorch)
@@ -11,15 +11,15 @@
 
 ---
 
-## 🌟 Features
+## Features
 
-* 🎨 Draw smiley 🙂 or sad 🙁 faces on a **100×100 canvas**
-* ⚡ **Real-time predictions**
-* 🧹 **Clear canvas** (Right-click or **Clear button**)
-* 🖌 Adjustable **brush size** & **color**
-* ↩️ **Undo / Redo** (advanced GUI)
-* 🚀 **GPU acceleration**
-* 📦 Pre-trained model: `smiley_model_varied.pth`
+*  Draw smiley 🙂 or sad 🙁 faces on a **100×100 canvas**
+*  **Real-time predictions**
+*  **Clear canvas** (Right-click or **Clear button**)
+*  Adjustable **brush size** & **color**
+*  **Undo / Redo** (advanced GUI)
+*  **GPU acceleration**
+*  Pre-trained model: `smiley_model_varied.pth`
 
 ---
 
@@ -41,7 +41,7 @@ Output: Smiley / Not Smiley
 
 ---
 
-## 📈 Training Metrics (Example)
+## Training Metrics (Example)
 
 <div align="center">
 
@@ -53,11 +53,11 @@ Output: Smiley / Not Smiley
 
 </div>
 
-> ✅ Reached **\~100% accuracy** on synthetic varied data.
+>  Reached **\~100% accuracy** on synthetic varied data.
 
 ---
 
-## 📸 Prediction Examples
+## Prediction Examples
 
 <div align="center">
 
@@ -70,7 +70,7 @@ Output: Smiley / Not Smiley
 
 ---
 
-## 🔧 Installation
+## Installation
 
 ```bash
 git clone https://github.com/IbrokhimN/Smiley.git
@@ -82,7 +82,7 @@ pip install -r requirements.txt
 
 ---
 
-## ▶️ Usage
+## Usage
 
 ```bash
 python3 draw_smiley_varied.py
@@ -94,7 +94,7 @@ python3 draw_smiley_varied.py
 
 ---
 
-## 📝 Notes
+## Notes
 
 * Model trained on **synthetic images** with:
 
@@ -109,7 +109,7 @@ python3 draw_smiley_varied.py
 
 ---
 
-## 📌 Try it Now
+## Try it Now
 
 ```bash
 python3 draw_smiley_varied.py
@@ -119,7 +119,7 @@ python3 draw_smiley_varied.py
 
 ---
 
-## 📜 License
+## License
 
 MIT License – free to use, modify, and share
 
